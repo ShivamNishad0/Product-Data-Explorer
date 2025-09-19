@@ -6,6 +6,7 @@
 - [x] Implement job model scrape_job to record status, error_log, started_at, finished_at. (Already in schema)
 - [x] Basic concurrency limits, per-domain delay, retries with exponential backoff. (Already in BullMQ config)
 - [x] Implement deduplication: check source_id/source_url unique constraint and skip if recent unless force-refresh. (Already implemented)
+- [x] Update all README.md files with necessary setup, running, and deployment instructions
 - [x] Expose a protected API to enqueue scrapes (internal usage + on-demand front-end trigger). (API exists, need protection)
 - [ ] Update scraping logic to scrape actual data from worldofbooks.com:
   - Navigation headings -> Navigation model
