@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Navigation {
+  id          Int      @id @default(autoincrement())
+  name        String
+  url         String?
+  source_id   String   @unique
+  source_url  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  categories  Category[]
+}
+
+model Category {
+  id            Int      @id @default(autoincrement())
+  name          String
+  navigationId  Int
+  source_id     String   @unique
+  source_url    String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  navigation    Navigation @relation(fields: [navigationId], references: [id])
+  products      Product[]
+}
+
+model Product {
+  id              Int             @id @default(autoincrement())
+  name            String
+  categoryId      Int
+  source_id       String          @unique
+  source_url      String          @unique
+  last_scraped_at DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  category        Category        @relation(fields: [categoryId], references: [id])
+  product_details ProductDetail[]
+  reviews         Review[]
+  view_histories  ViewHistory[]
+}
+
+model ProductDetail {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Review {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model ScrapeJob {
+  id        Int      @id @default(autoincrement())
+  url       String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ViewHistory {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    String?
+  viewedAt  DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+}
