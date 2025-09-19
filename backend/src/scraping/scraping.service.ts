@@ -137,16 +137,120 @@ export class ScrapingService {
   }
 
   private async scrapeCategoryPage(page: any): Promise<any> {
-    // Example scraping logic for category page
-    await page.waitForSelector('.category-title');
-    const categoryName = await page.$eval('.category-title', (el) => el.textContent?.trim());
-    return { categoryName };
+    // Scrape navigation headings and categories/subcategories
+    await page.waitForSelector('nav[aria-label="Main navigation"]');
+    const navigationHeadings = await page.$$eval('nav[aria-label="Main navigation"] > ul > li > a', els =>
+      els.map(el => el.textContent?.trim()).filter(Boolean)
+    );
+
+    // Scrape categories and subcategories (example selectors, adjust as needed)
+    const categories = await page.$$eval('.category-list > li > a', els =>
+      els.map(el => ({
+        name: el.textContent?.trim(),
+        url: el.getAttribute('href'),
+      }))
+    );
+
+    // Persist navigation and categories to DB (simplified example)
+    for (const heading of navigationHeadings) {
+      await this.prisma.navigation.upsert({
+        where: { source_id: heading.toLowerCase().replace(/\s+/g, '-') },
+        update: {},
+        create: { name: heading, source_id: heading.toLowerCase().replace(/\s+/g, '-'), source_url: '' },
+      });
+    }
+
+    for (const category of categories) {
+      await this.prisma.category.upsert({
+        where: { source_url: category.url || '' },
+        update: {},
+        create: {
+          name: category.name || '',
+          source_id: category.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          source_url: category.url || '',
+          navigationId: 1, // TODO: link to correct navigation id
+        },
+      });
+    }
+
+    return { navigationHeadings, categories };
   }
 
   private async scrapeProductPage(page: any): Promise<any> {
-    // Example scraping logic for product page
-    await page.waitForSelector('.product-title');
-    const productName = await page.$eval('.product-title', (el) => el.textContent?.trim());
-    return { productName };
+    // Scrape product tiles/cards on category page
+    await page.waitForSelector('.product-tile');
+    const products = await page.$$eval('.product-tile', tiles =>
+      tiles.map(tile => {
+        const title = tile.querySelector('.product-title')?.textContent?.trim() || '';
+        const author = tile.querySelector('.product-author')?.textContent?.trim() || '';
+        const price = tile.querySelector('.product-price')?.textContent?.trim() || '';
+        const image = tile.querySelector('img')?.getAttribute('src') || '';
+        const productLink = tile.querySelector('a')?.getAttribute('href') || '';
+        const sourceId = productLink.split('/').pop() || '';
+        return { title, author, price, image, productLink, sourceId };
+      })
+    );
+
+    // Scrape product detail page info if on product page
+    const isProductPage = await page.$('.product-detail');
+    let productDetails: { description?: string; reviews?: { rating: string; comment: string }[] } = {};
+    if (isProductPage) {
+      await page.waitForSelector('.product-description');
+      const description = await page.$eval('.product-description', el => el.textContent?.trim() || '');
+      const reviews = await page.$$eval('.review', reviews =>
+        reviews.map(r => ({
+          rating: r.querySelector('.rating')?.textContent?.trim() || '',
+          comment: r.querySelector('.comment')?.textContent?.trim() || '',
+        }))
+      );
+      productDetails = { description, reviews };
+    }
+
+    // Persist products and details to DB (simplified example)
+    for (const product of products) {
+      const prod = await this.prisma.product.upsert({
+        where: { source_id: product.sourceId },
+        update: {
+          name: product.title,
+          last_scraped_at: new Date(),
+        },
+        create: {
+          name: product.title,
+          source_id: product.sourceId,
+          source_url: product.productLink,
+          categoryId: 1, // TODO: link to correct category id
+        },
+      });
+
+      if (productDetails.description) {
+        // Prisma does not support composite unique keys in upsert where clause directly
+        // So we try to find existing record first, then update or create accordingly
+        const existingDetail = await this.prisma.productDetail.findFirst({
+          where: { productId: prod.id, key: 'description' },
+        });
+        if (existingDetail) {
+          await this.prisma.productDetail.update({
+            where: { id: existingDetail.id },
+            data: { value: productDetails.description },
+          });
+        } else {
+          await this.prisma.productDetail.create({
+            data: { productId: prod.id, key: 'description', value: productDetails.description },
+          });
+        }
+      }
+
+      for (const review of productDetails.reviews || []) {
+        await this.prisma.review.create({
+          data: {
+            productId: prod.id,
+            rating: parseInt(review.rating) || 0,
+            comment: review.comment,
+          },
+        });
+      }
+    }
+
+    return { products, productDetails };
   }
 }
