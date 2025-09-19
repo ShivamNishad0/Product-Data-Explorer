@@ -7,7 +7,7 @@ import { PrismaService } from '../src/prisma.service';
 describe('ScrapingController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: any;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,44 +31,48 @@ describe('ScrapingController (e2e)', () => {
     await app.close();
   });
 
-  it('/scraping/enqueue (POST) - enqueue a scrape job', async () => {
-    const url = 'https://www.worldofbooks.com/category/fiction';
+  it('/scrape (POST) - enqueue a scrape job', async () => {
+    const targetUrl = 'https://www.worldofbooks.com/category/fiction';
+    const targetType = 'category';
     const response = await request
-      .post('/scraping/enqueue')
-      .send({ url })
+      .post('/scrape')
+      .send({ targetUrl, targetType })
       .expect(201);
 
     expect(response.body.message).toBe('Scrape job enqueued successfully');
+    expect(response.body).toHaveProperty('jobId');
 
     // Check that a ScrapeJob record was created
-    const job = await prisma.scrapeJob.findFirst({ where: { url } });
+    const job = await prisma.scrapeJob.findFirst({ where: { url: targetUrl } });
     expect(job).toBeDefined();
     expect(job?.status).toBe('pending');
   });
 
   it('Worker infrastructure is set up correctly', async () => {
-    const url = 'https://www.worldofbooks.com/category/fiction';
+    const targetUrl = 'https://www.worldofbooks.com/category/fiction';
+    const targetType = 'category';
 
     // Enqueue job
     await request
-      .post('/scraping/enqueue')
-      .send({ url })
+      .post('/scrape')
+      .send({ targetUrl, targetType })
       .expect(201);
 
     // Verify job is created with pending status
-    const job = await prisma.scrapeJob.findFirst({ where: { url } });
+    const job = await prisma.scrapeJob.findFirst({ where: { url: targetUrl } });
     expect(job).toBeDefined();
     expect(job?.status).toBe('pending');
-    expect(job?.url).toBe(url);
+    expect(job?.url).toBe(targetUrl);
   });
 
   it('Deduplication skips enqueue if recent job exists', async () => {
-    const url = 'https://www.worldofbooks.com/category/fiction';
+    const targetUrl = 'https://www.worldofbooks.com/category/fiction';
+    const targetType = 'category';
 
     // Create a completed job recently
     await prisma.scrapeJob.create({
       data: {
-        url,
+        url: targetUrl,
         status: 'completed',
         finished_at: new Date(),
       },
@@ -76,14 +80,15 @@ describe('ScrapingController (e2e)', () => {
 
     // Enqueue again without forceRefresh
     const response = await request
-      .post('/scraping/enqueue')
-      .send({ url })
+      .post('/scrape')
+      .send({ targetUrl, targetType })
       .expect(201);
 
     expect(response.body.message).toBe('Scrape job enqueued successfully');
+    expect(response.body).toHaveProperty('jobId');
 
     // Check that no new job was created (only one job with this url)
-    const jobs = await prisma.scrapeJob.findMany({ where: { url } });
+    const jobs = await prisma.scrapeJob.findMany({ where: { url: targetUrl } });
     expect(jobs.length).toBe(1);
   });
 });

@@ -33,4 +33,24 @@ export class ProductService {
       data,
     });
   }
+
+  async findManyWithFilters(where: any, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    return this.prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        product_details: true,
+        reviews: true,
+        view_histories: true,
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async count(where: any) {
+    return this.prisma.product.count({ where });
+  }
 }

@@ -1,22 +1,27 @@
-# Milestone 3: Basic scraping worker & safe queue
+# Milestone 4 — Backend REST API (MVP endpoints)
 
 ## Tasks
-- [x] Add Redis + queue library (BullMQ) and a worker process in backend. (Already implemented)
-- [x] Integrate Crawlee + Playwright to perform scrapes. (Already implemented)
-- [x] Implement job model scrape_job to record status, error_log, started_at, finished_at. (Already in schema)
-- [x] Basic concurrency limits, per-domain delay, retries with exponential backoff. (Already in BullMQ config)
-- [x] Implement deduplication: check source_id/source_url unique constraint and skip if recent unless force-refresh. (Already implemented)
-- [x] Update all README.md files with necessary setup, running, and deployment instructions
-- [x] Expose a protected API to enqueue scrapes (internal usage + on-demand front-end trigger). (API exists, need protection)
-- [ ] Update scraping logic to scrape actual data from worldofbooks.com:
-  - Navigation headings -> Navigation model
-  - Categories & subcategories -> Category model
-  - Product tiles/cards: Title, Author, Price, Image, Product Link, Source ID -> Product model
-  - Product detail pages: Full description, reviews & ratings, related products, metadata -> ProductDetail, Review models
-- [ ] Implement persistence of scraped data to DB with relationships & unique constraints
-- [ ] Implement caching with expiry using last_scraped_at, respect robots.txt, rate limiting, delays
-- [ ] Add protection to enqueue API (JWT or basic auth)
-- [ ] Test the worker: enqueue job for category/product page, process, persist to DB, check ScrapeJob record
+- [x] Install required dependencies (class-validator, class-transformer, @nestjs/swagger, express-rate-limit, cache-manager, redis)
+- [x] Create DTOs for all endpoints
+  - [x] Navigation DTOs
+  - [x] Category DTOs
+  - [x] Product DTOs
+  - [x] Scrape DTOs
+- [x] Create controllers for navigation, category, product
+  - [x] NavigationController with GET /api/navigations
+  - [x] CategoryController with GET /api/categories/:id
+  - [x] ProductController with GET /api/products and GET /api/products/:id
+- [x] Update scraping controller and service
+  - [x] Update POST /api/scrape endpoint
+  - [x] Add GET /api/scrape-jobs/:id endpoint
+- [x] Implement caching middleware (DB + Redis) for scraping
+- [x] Add rate-limiting for scrape endpoints
+- [x] Add error handling and structured responses
+- [x] Configure Swagger/OpenAPI documentation
+- [x] Write unit tests for controllers/services
+- [x] Update modules to include new controllers
+- [x] Test endpoints and ensure frontend integration
 
-## Acceptance
-- Worker successfully scrapes a category or product page from worldofbooks and persists to DB, and a scrape_job record exists.
+## Acceptance Criteria
+- Frontend can call endpoints and receive expected payloads
+- API docs available (Swagger/OpenAPI)

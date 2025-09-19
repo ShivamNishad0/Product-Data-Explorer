@@ -1,6 +1,8 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Queue, Worker, Job } from 'bullmq';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma.service';
 import { PlaywrightCrawler } from 'crawlee';
 import { chromium } from 'playwright';
@@ -11,7 +13,10 @@ export class ScrapingService {
   private queue: Queue;
   private worker: Worker;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {
     this.queue = new Queue('scrapeQueue', {
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
@@ -43,8 +48,15 @@ export class ScrapingService {
     );
   }
 
-  async enqueueScrape(url: string, forceRefresh = false): Promise<void> {
+  async enqueueScrape(url: string, targetType: string, forceRefresh = false): Promise<number> {
     // Deduplication: check if a recent job exists for the same URL
+    const cacheKey = `scrape:${url}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached && !forceRefresh) {
+      this.logger.log(`Returning cached scrape job id for ${url}`);
+      return cached as number;
+    }
+
     const existingJob = await this.prisma.scrapeJob.findFirst({
       where: {
         url,
@@ -60,16 +72,19 @@ export class ScrapingService {
 
     if (existingJob && !forceRefresh) {
       this.logger.log(`Skipping enqueue for ${url} as recent job exists.`);
-      return;
+      await this.cacheManager.set(cacheKey, existingJob.id, 24 * 60 * 60);
+      return existingJob.id;
     }
 
-    await this.queue.add('scrape', { url });
-    await this.prisma.scrapeJob.create({
+    const job = await this.queue.add('scrape', { url, targetType });
+    const scrapeJob = await this.prisma.scrapeJob.create({
       data: {
         url,
         status: 'pending',
       },
     });
+    await this.cacheManager.set(cacheKey, scrapeJob.id, 24 * 60 * 60);
+    return scrapeJob.id;
   }
 
   private async processJob(job: Job): Promise<void> {
@@ -252,5 +267,11 @@ export class ScrapingService {
     }
 
     return { products, productDetails };
+  }
+
+  async getScrapeJob(id: number) {
+    return this.prisma.scrapeJob.findUnique({
+      where: { id },
+    });
   }
 }
