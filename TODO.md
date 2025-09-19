@@ -1,0 +1,9 @@
+- [x] Update backend/package.json to add BullMQ, Crawlee, Playwright dependencies
+- [x] Update backend/prisma/schema.prisma to add error_log, started_at, finished_at, type to ScrapeJob
+- [x] Generate and run Prisma migration for ScrapeJob changes
+- [x] Create backend/src/scraping/scraping.module.ts
+- [x] Create backend/src/scraping/scraping.service.ts
+- [x] Create backend/src/scraping/scraping.controller.ts
+- [x] Update backend/src/app.module.ts to include ScrapingModule
+- [x] Install Playwright browsers
+- [ ] Test scraping a category or product page from worldofbooks

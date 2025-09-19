@@ -72,11 +72,14 @@ model Review {
 }
 
 model ScrapeJob {
-  id        Int      @id @default(autoincrement())
-  url       String
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  url         String
+  status      String   @default("pending")
+  error_log   String?  // nullable field to store error logs
+  started_at  DateTime? // nullable field to store job start time
+  finished_at DateTime? // nullable field to store job finish time
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ViewHistory {
