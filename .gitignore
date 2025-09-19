@@ -1,0 +1,25 @@
+# Node
+node_modules
+npm-debug.log
+yarn-debug.log
+pnpm-debug.log
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+*.pid
+*.seed
+
+# Build outputs
+dist
+.next
+out
+coverage
+
+# Docker
+docker-compose.override.yml
