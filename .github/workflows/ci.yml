@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16
@@ -19,12 +20,109 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/products
+      REDIS_URL: redis://localhost:6379
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install deps & lint
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Run Prisma migrations
+        run: cd backend && npx prisma migrate deploy
+
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
+
+      - name: Lint backend
+        run: cd backend && npm run lint
+
+      - name: Lint frontend
+        run: cd frontend && npm run lint
+
+      - name: Build backend
+        run: cd backend && npm run build
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Run backend tests
+        run: cd backend && npm run test
+
+      - name: Run backend e2e tests
+        run: cd backend && npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/products
+          REDIS_URL: redis://localhost:6379
+
+      - name: Start backend server
+        run: cd backend && npm run start:prod &
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/products
+          REDIS_URL: redis://localhost:6379
+
+      - name: Wait for backend to be ready
         run: |
-          cd backend && npm ci && npm run lint
-          cd ../frontend && npm ci && npm run lint
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/health || curl -f http://localhost:3001; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Start frontend server
+        run: cd frontend && npm start &
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+
+      - name: Wait for frontend to be ready
+        run: |
+          echo "Waiting for frontend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000; then
+              echo "Frontend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Health check
+        run: |
+          echo "Running health checks..."
+          curl -f http://localhost:3001/health || curl -f http://localhost:3001
+          curl -f http://localhost:3000
+          echo "All services are healthy!"

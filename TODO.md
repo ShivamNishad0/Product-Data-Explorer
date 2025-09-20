@@ -1,27 +1,17 @@
-# Milestone 4 — Backend REST API (MVP endpoints)
+# CI Fix Tasks
 
-## Tasks
-- [x] Install required dependencies (class-validator, class-transformer, @nestjs/swagger, express-rate-limit, cache-manager, redis)
-- [x] Create DTOs for all endpoints
-  - [x] Navigation DTOs
-  - [x] Category DTOs
-  - [x] Product DTOs
-  - [x] Scrape DTOs
-- [x] Create controllers for navigation, category, product
-  - [x] NavigationController with GET /api/navigations
-  - [x] CategoryController with GET /api/categories/:id
-  - [x] ProductController with GET /api/products and GET /api/products/:id
-- [x] Update scraping controller and service
-  - [x] Update POST /api/scrape endpoint
-  - [x] Add GET /api/scrape-jobs/:id endpoint
-- [x] Implement caching middleware (DB + Redis) for scraping
-- [x] Add rate-limiting for scrape endpoints
-- [x] Add error handling and structured responses
-- [x] Configure Swagger/OpenAPI documentation
-- [x] Write unit tests for controllers/services
-- [x] Update modules to include new controllers
-- [x] Test endpoints and ensure frontend integration
+## Current Issues Identified:
+1. Missing database setup (Prisma migrations)
+2. Missing build steps for both backend and frontend
+3. Missing test execution
+4. Missing environment variables
+5. Incomplete workflow verification
 
-## Acceptance Criteria
-- Frontend can call endpoints and receive expected payloads
-- API docs available (Swagger/OpenAPI)
+## Implementation Plan:
+- [ ] Update .github/workflows/ci.yml with comprehensive CI pipeline
+- [ ] Add environment variables setup
+- [ ] Add database migration steps
+- [ ] Add build steps for backend and frontend
+- [ ] Add test execution
+- [ ] Add service verification steps
+- [ ] Add proper caching and optimization
