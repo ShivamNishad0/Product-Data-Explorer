@@ -53,10 +53,7 @@ describe('ScrapingController (e2e)', () => {
     const targetType = 'category';
 
     // Enqueue job
-    await request
-      .post('/scrape')
-      .send({ targetUrl, targetType })
-      .expect(201);
+    await request.post('/scrape').send({ targetUrl, targetType }).expect(201);
 
     // Verify job is created with pending status
     const job = await prisma.scrapeJob.findFirst({ where: { url: targetUrl } });

@@ -24,7 +24,12 @@ export class CategoryService {
     });
   }
 
-  async create(data: { name: string; navigationId: number; source_id: string; source_url: string }) {
+  async create(data: {
+    name: string;
+    navigationId: number;
+    source_id: string;
+    source_url: string;
+  }) {
     return this.prisma.category.create({
       data,
     });

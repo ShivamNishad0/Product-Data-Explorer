@@ -28,7 +28,13 @@ export class ProductService {
     });
   }
 
-  async create(data: { name: string; categoryId: number; source_id: string; source_url: string; last_scraped_at?: Date }) {
+  async create(data: {
+    name: string;
+    categoryId: number;
+    source_id: string;
+    source_url: string;
+    last_scraped_at?: Date;
+  }) {
     return this.prisma.product.create({
       data,
     });

@@ -1,4 +1,3 @@
-
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Queue, Worker, Job } from 'bullmq';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -48,7 +47,11 @@ export class ScrapingService {
     );
   }
 
-  async enqueueScrape(url: string, targetType: string, forceRefresh = false): Promise<number> {
+  async enqueueScrape(
+    url: string,
+    targetType: string,
+    forceRefresh = false,
+  ): Promise<number> {
     // Deduplication: check if a recent job exists for the same URL
     const cacheKey = `scrape:${url}`;
     const cached = await this.cacheManager.get(cacheKey);
@@ -134,7 +137,11 @@ export class ScrapingService {
 
           await this.prisma.scrapeJob.update({
             where: { id: Number(job.id) },
-            data: { status: 'failed', error_log: err.message, finished_at: new Date() },
+            data: {
+              status: 'failed',
+              error_log: err.message,
+              finished_at: new Date(),
+            },
           });
         },
       });
@@ -146,7 +153,11 @@ export class ScrapingService {
 
       await this.prisma.scrapeJob.update({
         where: { id: Number(job.id) },
-        data: { status: 'failed', error_log: err.message, finished_at: new Date() },
+        data: {
+          status: 'failed',
+          error_log: err.message,
+          finished_at: new Date(),
+        },
       });
     }
   }
@@ -154,16 +165,17 @@ export class ScrapingService {
   private async scrapeCategoryPage(page: any): Promise<any> {
     // Scrape navigation headings and categories/subcategories
     await page.waitForSelector('nav[aria-label="Main navigation"]');
-    const navigationHeadings = await page.$$eval('nav[aria-label="Main navigation"] > ul > li > a', els =>
-      els.map(el => el.textContent?.trim()).filter(Boolean)
+    const navigationHeadings = await page.$$eval(
+      'nav[aria-label="Main navigation"] > ul > li > a',
+      (els) => els.map((el) => el.textContent?.trim()).filter(Boolean),
     );
 
     // Scrape categories and subcategories (example selectors, adjust as needed)
-    const categories = await page.$$eval('.category-list > li > a', els =>
-      els.map(el => ({
+    const categories = await page.$$eval('.category-list > li > a', (els) =>
+      els.map((el) => ({
         name: el.textContent?.trim(),
         url: el.getAttribute('href'),
-      }))
+      })),
     );
 
     // Persist navigation and categories to DB (simplified example)
@@ -171,7 +183,11 @@ export class ScrapingService {
       await this.prisma.navigation.upsert({
         where: { source_id: heading.toLowerCase().replace(/\s+/g, '-') },
         update: {},
-        create: { name: heading, source_id: heading.toLowerCase().replace(/\s+/g, '-'), source_url: '' },
+        create: {
+          name: heading,
+          source_id: heading.toLowerCase().replace(/\s+/g, '-'),
+          source_url: '',
+        },
       });
     }
 
@@ -194,29 +210,38 @@ export class ScrapingService {
   private async scrapeProductPage(page: any): Promise<any> {
     // Scrape product tiles/cards on category page
     await page.waitForSelector('.product-tile');
-    const products = await page.$$eval('.product-tile', tiles =>
-      tiles.map(tile => {
-        const title = tile.querySelector('.product-title')?.textContent?.trim() || '';
-        const author = tile.querySelector('.product-author')?.textContent?.trim() || '';
-        const price = tile.querySelector('.product-price')?.textContent?.trim() || '';
+    const products = await page.$$eval('.product-tile', (tiles) =>
+      tiles.map((tile) => {
+        const title =
+          tile.querySelector('.product-title')?.textContent?.trim() || '';
+        const author =
+          tile.querySelector('.product-author')?.textContent?.trim() || '';
+        const price =
+          tile.querySelector('.product-price')?.textContent?.trim() || '';
         const image = tile.querySelector('img')?.getAttribute('src') || '';
         const productLink = tile.querySelector('a')?.getAttribute('href') || '';
         const sourceId = productLink.split('/').pop() || '';
         return { title, author, price, image, productLink, sourceId };
-      })
+      }),
     );
 
     // Scrape product detail page info if on product page
     const isProductPage = await page.$('.product-detail');
-    let productDetails: { description?: string; reviews?: { rating: string; comment: string }[] } = {};
+    let productDetails: {
+      description?: string;
+      reviews?: { rating: string; comment: string }[];
+    } = {};
     if (isProductPage) {
       await page.waitForSelector('.product-description');
-      const description = await page.$eval('.product-description', el => el.textContent?.trim() || '');
-      const reviews = await page.$$eval('.review', reviews =>
-        reviews.map(r => ({
+      const description = await page.$eval(
+        '.product-description',
+        (el) => el.textContent?.trim() || '',
+      );
+      const reviews = await page.$$eval('.review', (reviews) =>
+        reviews.map((r) => ({
           rating: r.querySelector('.rating')?.textContent?.trim() || '',
           comment: r.querySelector('.comment')?.textContent?.trim() || '',
-        }))
+        })),
       );
       productDetails = { description, reviews };
     }
@@ -250,7 +275,11 @@ export class ScrapingService {
           });
         } else {
           await this.prisma.productDetail.create({
-            data: { productId: prod.id, key: 'description', value: productDetails.description },
+            data: {
+              productId: prod.id,
+              key: 'description',
+              value: productDetails.description,
+            },
           });
         }
       }

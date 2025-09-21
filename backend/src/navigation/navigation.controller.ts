@@ -10,7 +10,11 @@ export class NavigationController {
 
   @Get()
   @ApiOperation({ summary: 'Get all navigation headings' })
-  @ApiResponse({ status: 200, description: 'List of navigation headings', type: [NavigationResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of navigation headings',
+    type: [NavigationResponseDto],
+  })
   async findAll(): Promise<NavigationResponseDto[]> {
     return this.navigationService.findAll();
   }

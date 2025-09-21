@@ -22,7 +22,12 @@ export class NavigationService {
     });
   }
 
-  async create(data: { name: string; url?: string; source_id: string; source_url: string }) {
+  async create(data: {
+    name: string;
+    url?: string;
+    source_id: string;
+    source_url: string;
+  }) {
     return this.prisma.navigation.create({
       data,
     });

@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Explore and discover products from various sources",
 };
 
+import { ReactQueryProvider } from '@/components/providers/react-query-provider';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,7 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ReactQueryProvider>
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );

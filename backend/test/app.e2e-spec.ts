@@ -13,7 +13,9 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
     request = supertest(app.getHttpServer());
   });
@@ -26,7 +28,7 @@ describe('AppController (e2e)', () => {
     return request
       .get('/navigations')
       .expect(200)
-      .expect(res => {
+      .expect((res) => {
         expect(Array.isArray(res.body)).toBe(true);
       });
   });
@@ -39,16 +41,14 @@ describe('AppController (e2e)', () => {
   });
 
   it('/categories/:id (GET) - non-existing category', () => {
-    return request
-      .get('/categories/999999')
-      .expect(404);
+    return request.get('/categories/999999').expect(404);
   });
 
   it('/products (GET) - pagination and filters', () => {
     return request
       .get('/products?categoryId=1&page=1&limit=5&q=test')
       .expect(200)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body).toHaveProperty('data');
         expect(Array.isArray(res.body.data)).toBe(true);
         expect(res.body).toHaveProperty('total');
@@ -66,9 +66,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('/products/:id (GET) - non-existing product', () => {
-    return request
-      .get('/products/999999')
-      .expect(404);
+    return request.get('/products/999999').expect(404);
   });
 
   it('/scrape (POST) - enqueue scrape job', () => {
@@ -76,7 +74,7 @@ describe('AppController (e2e)', () => {
       .post('/scrape')
       .send({ targetUrl: 'http://example.com', targetType: 'category' })
       .expect(201)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('jobId');
       });
@@ -90,8 +88,6 @@ describe('AppController (e2e)', () => {
   });
 
   it('/scrape/jobs/:id (GET) - non-existing scrape job', () => {
-    return request
-      .get('/scrape/jobs/999999')
-      .expect(404);
+    return request.get('/scrape/jobs/999999').expect(404);
   });
 });
