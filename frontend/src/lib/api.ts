@@ -8,6 +8,7 @@ import {
   ScrapeRequest,
   ScrapeJobResponse,
   BrowsingHistoryResponse,
+  BrowsingHistoryItem,
 } from '@/types/api';
 
 // Create axios instance with base configuration
@@ -97,7 +98,7 @@ export const scrapingApi = {
 
 // Browsing History API
 export const historyApi = {
-  syncHistory: async (history: any[]): Promise<BrowsingHistoryResponse> => {
+  syncHistory: async (history: BrowsingHistoryItem[]): Promise<BrowsingHistoryResponse> => {
     const response = await api.post('/history/sync', { history });
     return response.data;
   },

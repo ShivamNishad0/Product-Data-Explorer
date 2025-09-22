@@ -8,6 +8,7 @@ import {
   NotFoundException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ScrapingService } from './scraping.service';
 import { ScrapeRequestDto, ScrapeJobResponseDto } from './dto/scrape.dto';
@@ -19,7 +20,7 @@ export class ScrapingController {
   constructor(private readonly scrapingService: ScrapingService) {}
 
   @Post()
-  @UseGuards(RateLimitGuard)
+  @UseGuards(RateLimitGuard, ApiKeyGuard)
   @ApiOperation({ summary: 'Enqueue on-demand scrape job' })
   @ApiResponse({ status: 201, description: 'Scrape job enqueued successfully' })
   async enqueueScrape(

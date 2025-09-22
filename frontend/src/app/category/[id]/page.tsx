@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { categoryApi, productApi } from '@/lib/api';
 import type { CategoryResponse, ProductListResponse } from '@/types/api';

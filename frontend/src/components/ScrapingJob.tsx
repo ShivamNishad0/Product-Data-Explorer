@@ -23,8 +23,9 @@ export default function ScrapingJob({ targetUrl, targetType }: ScrapingJobProps)
       setJobId(response.jobId);
       setStatus('Enqueued');
       pollJobStatus(response.jobId);
-    } catch (err: any) {
-      setError(err.message || 'Failed to enqueue scrape job');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to enqueue scrape job';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -37,8 +38,9 @@ export default function ScrapingJob({ targetUrl, targetType }: ScrapingJobProps)
       if (job.status === 'pending' || job.status === 'in_progress') {
         setTimeout(() => pollJobStatus(id), 3000);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch scrape job status');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch scrape job status';
+      setError(errorMessage);
     }
   };
 

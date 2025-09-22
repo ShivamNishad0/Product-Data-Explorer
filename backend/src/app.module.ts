@@ -10,6 +10,8 @@ import { NavigationModule } from './navigation/navigation.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { ScrapingModule } from './scraping/scraping.module';
+import { HealthController } from './health/health.controller';
+import { MetricsController } from './metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -38,7 +40,7 @@ import { ScrapingModule } from './scraping/scraping.module';
     ProductModule,
     ScrapingModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController, MetricsController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -5,6 +5,7 @@ import {
   Query,
   ParseIntPipe,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProductService } from './product.service';
@@ -13,11 +14,17 @@ import {
   ProductListResponseDto,
   ProductQueryDto,
 } from './dto/product.dto';
+import type { Cache } from 'cache-manager';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  private readonly ttlSeconds = Number(process.env.PRODUCT_CACHE_TTL_SECONDS) || 3600; // 1 hour default
+
+  constructor(
+    private readonly productService: ProductService,
+    @Inject('CACHE_MANAGER') private cacheManager: Cache,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get product grid with pagination and filters' })
@@ -40,14 +47,23 @@ export class ProductController {
       where.name = { contains: q, mode: 'insensitive' };
     }
 
+    const cacheKey = `productList:${JSON.stringify(where)}:page:${page}:limit:${limit}`;
+    const cached = await this.cacheManager.get<ProductListResponseDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const [data, total] = await Promise.all([
       this.productService.findManyWithFilters(where, page, limit),
       this.productService.count(where),
     ]);
 
     const totalPages = Math.ceil(total / limit);
+    const result = { data, total, page, limit, totalPages };
 
-    return { data, total, page, limit, totalPages };
+    await this.cacheManager.set(cacheKey, result, this.ttlSeconds);
+
+    return result;
   }
 
   @Get(':id')
@@ -60,10 +76,19 @@ export class ProductController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ProductResponseDto> {
+    const cacheKey = `product:${id}`;
+    const cached = await this.cacheManager.get<ProductResponseDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const product = await this.productService.findOne(id);
     if (!product) {
       throw new NotFoundException(`Product with id ${id} not found`);
     }
+
+    await this.cacheManager.set(cacheKey, product, this.ttlSeconds);
+
     return product;
   }
 }

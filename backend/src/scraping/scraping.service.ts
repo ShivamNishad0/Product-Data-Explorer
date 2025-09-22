@@ -1,5 +1,7 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import logger from '../common/logger';
 import { Queue, Worker, Job } from 'bullmq';
+import { metricsController } from '../metrics/metrics.controller';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma.service';
@@ -8,7 +10,7 @@ import { chromium } from 'playwright';
 
 @Injectable()
 export class ScrapingService {
-  private readonly logger = new Logger(ScrapingService.name);
+  // private readonly logger = new Logger(ScrapingService.name);
   private queue: Queue;
   private worker: Worker;
 
@@ -47,16 +49,18 @@ export class ScrapingService {
     );
   }
 
+  private readonly ttlSeconds = Number(process.env.SCRAPE_TTL_SECONDS) || 86400; // 24 hours default
+
   async enqueueScrape(
     url: string,
     targetType: string,
     forceRefresh = false,
   ): Promise<number> {
-    // Deduplication: check if a recent job exists for the same URL
+    // Deduplication: check if a recent job exists for the same URL with TTL check
     const cacheKey = `scrape:${url}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached && !forceRefresh) {
-      this.logger.log(`Returning cached scrape job id for ${url}`);
+      logger.info(`Returning cached scrape job id for ${url}`);
       return cached as number;
     }
 
@@ -65,7 +69,7 @@ export class ScrapingService {
         url,
         status: 'completed',
         finished_at: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // last 24 hours
+          gte: new Date(Date.now() - this.ttlSeconds * 1000),
         },
       },
       orderBy: {
@@ -74,8 +78,8 @@ export class ScrapingService {
     });
 
     if (existingJob && !forceRefresh) {
-      this.logger.log(`Skipping enqueue for ${url} as recent job exists.`);
-      await this.cacheManager.set(cacheKey, existingJob.id, 24 * 60 * 60);
+      logger.info(`Skipping enqueue for ${url} as recent job exists.`);
+      await this.cacheManager.set(cacheKey, existingJob.id, this.ttlSeconds);
       return existingJob.id;
     }
 
@@ -86,12 +90,13 @@ export class ScrapingService {
         status: 'pending',
       },
     });
-    await this.cacheManager.set(cacheKey, scrapeJob.id, 24 * 60 * 60);
+    metricsController.incrementJobCount();
+    await this.cacheManager.set(cacheKey, scrapeJob.id, this.ttlSeconds);
     return scrapeJob.id;
   }
 
   private async processJob(job: Job): Promise<void> {
-    this.logger.log(`Processing job ${job.id} for URL: ${job.data.url}`);
+    logger.info(`Processing job ${job.id} for URL: ${job.data.url}`);
 
     // Update job started_at and status
     await this.prisma.scrapeJob.update({
@@ -123,7 +128,7 @@ export class ScrapingService {
           }
 
           // Persist scraped data to DB here (simplified)
-          this.logger.log(`Scraped data for ${url}: ${JSON.stringify(data)}`);
+          logger.info(`Scraped data for ${url}: ${JSON.stringify(data)}`);
 
           // Mark job as completed
           await this.prisma.scrapeJob.update({
@@ -133,7 +138,8 @@ export class ScrapingService {
         },
         failedRequestHandler: async ({ request, error }) => {
           const err = error as Error;
-          this.logger.error(`Failed to scrape ${request.url}: ${err.message}`);
+          logger.error(`Failed to scrape ${request.url}: ${err.message}`);
+          metricsController.incrementErrorCount();
 
           await this.prisma.scrapeJob.update({
             where: { id: Number(job.id) },
@@ -149,7 +155,8 @@ export class ScrapingService {
       await crawler.run([job.data.url]);
     } catch (error) {
       const err = error as Error;
-      this.logger.error(`Error processing job ${job.id}: ${err.message}`);
+      logger.error(`Error processing job ${job.id}: ${err.message}`);
+      metricsController.incrementErrorCount();
 
       await this.prisma.scrapeJob.update({
         where: { id: Number(job.id) },
@@ -293,6 +300,12 @@ export class ScrapingService {
           },
         });
       }
+
+      // Invalidate caches related to this product and product list
+      const productCacheKey = `product:${prod.id}`;
+      const productListCacheKey = `productList:category:${prod.categoryId}`;
+      await this.cacheManager.del(productCacheKey);
+      await this.cacheManager.del(productListCacheKey);
     }
 
     return { products, productDetails };
