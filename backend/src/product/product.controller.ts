@@ -19,7 +19,8 @@ import type { Cache } from 'cache-manager';
 @ApiTags('products')
 @Controller('products')
 export class ProductController {
-  private readonly ttlSeconds = Number(process.env.PRODUCT_CACHE_TTL_SECONDS) || 3600; // 1 hour default
+  private readonly ttlSeconds =
+    Number(process.env.PRODUCT_CACHE_TTL_SECONDS) || 3600; // 1 hour default
 
   constructor(
     private readonly productService: ProductService,
@@ -48,7 +49,8 @@ export class ProductController {
     }
 
     const cacheKey = `productList:${JSON.stringify(where)}:page:${page}:limit:${limit}`;
-    const cached = await this.cacheManager.get<ProductListResponseDto>(cacheKey);
+    const cached =
+      await this.cacheManager.get<ProductListResponseDto>(cacheKey);
     if (cached) {
       return cached;
     }

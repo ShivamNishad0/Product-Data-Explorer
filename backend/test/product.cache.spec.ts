@@ -30,14 +30,18 @@ describe('ProductController Cache (e2e)', () => {
   });
 
   it('should cache product list responses', async () => {
-    const res1 = await request.get('/products?categoryId=1&page=1&limit=5').expect(200);
+    const res1 = await request
+      .get('/products?categoryId=1&page=1&limit=5')
+      .expect(200);
     expect(res1.body).toHaveProperty('data');
     const cacheKey = `productList:{"categoryId":1}:page:1:limit:5`;
     const cached = await cacheManager.get(cacheKey);
     expect(cached).toBeDefined();
 
     // Second request should hit cache
-    const res2 = await request.get('/products?categoryId=1&page=1&limit=5').expect(200);
+    const res2 = await request
+      .get('/products?categoryId=1&page=1&limit=5')
+      .expect(200);
     expect(res2.body).toEqual(cached);
   });
 

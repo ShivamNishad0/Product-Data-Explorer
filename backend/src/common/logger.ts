@@ -9,18 +9,14 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 
 const logger = createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    logFormat
-  ),
+  format: combine(timestamp(), errors({ stack: true }), logFormat),
   transports: [
     new transports.Console({
       format: combine(
         colorize(),
         timestamp(),
         errors({ stack: true }),
-        logFormat
+        logFormat,
       ),
     }),
   ],

@@ -33,10 +33,7 @@ describe('Observability and Security (e2e)', () => {
   it('/scrape (POST) - rejects without API key', async () => {
     const targetUrl = 'https://www.worldofbooks.com/category/nonfiction';
     const targetType = 'category';
-    await request
-      .post('/scrape')
-      .send({ targetUrl, targetType })
-      .expect(401);
+    await request.post('/scrape').send({ targetUrl, targetType }).expect(401);
   });
 
   it('/scrape (POST) - accepts with valid API key', async () => {

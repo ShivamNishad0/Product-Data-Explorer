@@ -50,7 +50,12 @@ describe('ProductService', () => {
 
   describe('create', () => {
     it('should create a product', async () => {
-      const dto = { name: 'New Product', categoryId: 1, source_id: 'abc', source_url: 'url' };
+      const dto = {
+        name: 'New Product',
+        categoryId: 1,
+        source_id: 'abc',
+        source_url: 'url',
+      };
       const result = { id: 1, ...dto };
       (prisma.product.create as jest.Mock).mockResolvedValue(result);
       expect(await service.create(dto)).toBe(result);

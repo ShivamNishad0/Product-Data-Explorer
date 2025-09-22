@@ -15,16 +15,12 @@ export class HealthController {
       },
     });
 
-    this.worker = new Worker(
-      'scrapeQueue',
-      async () => {},
-      {
-        connection: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: Number(process.env.REDIS_PORT) || 6379,
-        },
+    this.worker = new Worker('scrapeQueue', async () => {}, {
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
       },
-    );
+    });
   }
 
   @Get('worker')
