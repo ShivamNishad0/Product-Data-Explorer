@@ -8,9 +8,7 @@ import type { ProductResponse } from '@/types/api';
 import { addToHistory, syncHistory } from '@/lib/history';
 
 interface ProductPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  productId: number;
 }
 
 function ProductSkeleton() {
@@ -25,9 +23,7 @@ function ProductSkeleton() {
   );
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  const productId = Number(id);
+export default function ProductPage({ productId }: ProductPageProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
 

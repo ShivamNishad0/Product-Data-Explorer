@@ -16,11 +16,12 @@
 - [x] Add test scripts to frontend/package.json.
 
 ## CI Workflow (GitHub Actions)
-- [ ] Create GitHub Actions workflow file `.github/workflows/ci.yml`.
-- [ ] Configure workflow to run on pull requests.
-- [ ] Steps: lint → test → build.
-- [ ] Fail the workflow on lint or test regressions.
-- [ ] Optionally add deploy preview on PRs.
+- [x] Create GitHub Actions workflow file `.github/workflows/ci.yml`.
+- [x] Configure workflow to run on pull requests.
+- [x] Steps: lint → test → build.
+- [x] Fail the workflow on lint or test regressions.
+- [x] Fixed port conflicts (frontend: 3000, backend: 3001).
+- [x] Updated startup commands and environment configuration.
 
 ## Followup Steps
 - [ ] Run all tests locally and in CI.
